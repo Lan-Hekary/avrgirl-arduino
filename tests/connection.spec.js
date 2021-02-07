@@ -1,7 +1,6 @@
 var test = require('tape');
 var proxyquire = require('proxyquire');
 var mockSerial = require('./helpers/mockSerial');
-var sinon = require('sinon');
 
 // module to test
 var ConnectionTest = proxyquire.noCallThru().load('../lib/connection', { SerialPort: mockSerial.SerialPort });
@@ -61,7 +60,7 @@ test('[ Connection ] ::_listPorts (UNIX)', function(t) {
 test('[ Connection ] ::_listPorts (WINDOWS)', function(t) {
   t.plan(3);
   var ConnectionTest = proxyquire.noCallThru().load('../lib/connection', { serialport: {
-    list: function(callback) { return Promise.resolve(
+    list: function() { return Promise.resolve(
       [
         { comName: 'COM3', manufacturer: 'Microsoft', serialNumber: '',
           pnpId: 'USB\\\\VID_2341&PID_0043\\\\55432333038351F03170',
@@ -90,7 +89,7 @@ test('[ Connection ] ::_listPorts (WINDOWS)', function(t) {
 test('[ Connection ] ::_sniffPort (UNIX)', function(t) {
   t.plan(3);
   var ConnectionTest = proxyquire.noCallThru().load('../lib/connection', { serialport: {
-    list: function(callback) { return Promise.resolve(
+    list: function() { return Promise.resolve(
       [
         { comName: '/dev/cu.sierravsp', manufacturer: '', serialNumber: '',
           pnpId: '', locationId: '', vendorId: '', productId: '' },
@@ -120,7 +119,7 @@ test('[ Connection ] ::_sniffPort (UNIX)', function(t) {
 test('[ Connection ] ::_sniffPort (WINDOWS)', function(t) {
   t.plan(3);
   var ConnectionTest = proxyquire.noCallThru().load('../lib/connection', { serialport: {
-    list: function(callback) { return Promise.resolve(
+    list: function() { return Promise.resolve(
       [
         { comName: 'COM3', manufacturer: 'Microsoft', serialNumber: '',
           pnpId: 'USB\\\\VID_2341&PID_0043\\\\55432333038351F03170',
@@ -145,7 +144,7 @@ test('[ Connection ] ::_sniffPort (WINDOWS)', function(t) {
 test('[ Connection ] ::_pollForPort', function(t) {
   t.plan(1);
   var mockedSerial = mockSerial.SerialPort;
-  mockedSerial.list = function(callback) { return Promise.resolve(
+  mockedSerial.list = function() { return Promise.resolve(
     [
       { comName: '/dev/cu.sierravsp', manufacturer: '', serialNumber: '',
         pnpId: '', locationId: '', vendorId: '', productId: '' },
@@ -162,7 +161,7 @@ test('[ Connection ] ::_pollForPort', function(t) {
     .load('../lib/connection', { serialport: mockSerial.SerialPort });
 
   var options = {
-    debug: false,
+    debug: function(){},
     board: {
       baud: 115200,
       signature: Buffer.from([0x1e, 0x95, 0x0f]),
@@ -175,11 +174,9 @@ test('[ Connection ] ::_pollForPort', function(t) {
     port: '/dev/cu.usbmodem1421'
   };
 
-  // nodejs 0.10.x race condition needs this
-  setTimeout(function() {
-    var c = new ConnectionTest(options);
-    c._pollForPort(function(error) {
-      t.error(error, 'no error on polling result');
-    });
-  }, 200);
+  var c = new ConnectionTest(options);
+  c._pollForPort(function(error, ports) {
+    console.log(error, ports);
+    t.error(error, 'no error on polling result');
+  });
 });
